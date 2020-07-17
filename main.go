@@ -2,22 +2,18 @@ package main
 
 import (
 	"flag"
-	"fmt"
-	"log"
-	"time"
-
 	"github.com/martin-helmich/kubernetes-crd-example/api/types/v1alpha1"
 	clientV1alpha1 "github.com/martin-helmich/kubernetes-crd-example/clientset/v1alpha1"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes/scheme"
 	"k8s.io/client-go/rest"
 	"k8s.io/client-go/tools/clientcmd"
+	"log"
 )
 
 var kubeconfig string
 
 func init() {
-	flag.StringVar(&kubeconfig, "kubeconfig", "", "path to Kubernetes config file")
+	flag.StringVar(&kubeconfig, "kubeconfig", "./config", "path to Kubernetes config file")
 	flag.Parse()
 }
 
@@ -44,19 +40,7 @@ func main() {
 		panic(err)
 	}
 
-	projects, err := clientSet.Projects("default").List(metav1.ListOptions{})
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Printf("projects found: %+v\n", projects)
-
-	store := WatchResources(clientSet)
-
-	for {
-		projectsFromStore := store.List()
-		fmt.Printf("project in store: %d\n", len(projectsFromStore))
-
-		time.Sleep(2 * time.Second)
-	}
+	controller := WatchResources(clientSet)
+	stop := make(chan struct{})
+	controller.Run(stop)
 }
